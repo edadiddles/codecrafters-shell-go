@@ -8,7 +8,13 @@ import (
 )
 
 func main() {
-	fmt.Fprint(os.Stdout, "$ ")
+    for {
+        repl()
+    }
+}
+
+func repl() {
+    fmt.Fprint(os.Stdout, "$ ")
 
 	// Wait for user input
     input, err := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -19,7 +25,7 @@ func main() {
     input = strings.TrimSpace(input)
     if !is_valid_cmd(input) {
         fmt.Fprintf(os.Stdout, "%s: command not found\n", input)
-    } 
+    }
 }
 
 func is_valid_cmd(cmd string) bool {
