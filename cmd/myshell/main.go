@@ -37,7 +37,6 @@ func main() {
 
         if string(splt_input[0]) == "exit" {
             status, err = strconv.Atoi(splt_input[1])
-            fmt.Fprintf(os.Stdout, "Exiting with status %d\n", status)
             break
         }
     }
