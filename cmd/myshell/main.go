@@ -15,6 +15,7 @@ var BUILTIN_LIST = []string {
     "echo",
     "type",
     "pwd",
+    "cd",
 }
 
 
@@ -61,6 +62,13 @@ func main() {
                     panic(err)
                 }
                 fmt.Fprintf(os.Stdout, "%s\n", dir)
+            } else if cmd == "cd" {
+                chg_dir := string(splt_input[1])
+                err := os.Chdir(chg_dir)
+                if err != nil {
+                    fmt.Fprintf(os.Stdout, "%s: No such file or directory\n", chg_dir)
+                }
+
             }
         } else if cmd_path != "" {
             var args = []string{} 
