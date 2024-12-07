@@ -14,6 +14,7 @@ var BUILTIN_LIST = []string {
     "exit",
     "echo",
     "type",
+    "pwd",
 }
 
 
@@ -54,6 +55,12 @@ func main() {
                 } else {
                     fmt.Fprintf(os.Stdout, "%s: not found\n", chk) 
                 }
+            } else if cmd == "pwd" {
+                dir, err := os.Getwd()
+                if err != nil {
+                    panic(err)
+                }
+                fmt.Fprintf(os.Stdout, "%s\n", dir)
             }
         } else if cmd_path != "" {
             var args = []string{} 
