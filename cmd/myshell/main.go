@@ -9,9 +9,10 @@ import (
     "strconv"
 )
 
-var CMD_LIST = []string {
+var BUILTIN_LIST = []string {
     "exit",
     "echo",
+    "type",
 }
 
 
@@ -32,7 +33,7 @@ func main() {
         if len(splt_input) == 0 {
            return 
         }
-        if !is_valid_cmd(splt_input[0]) {
+        if !is_valid_builtin(splt_input[0]) {
             fmt.Fprintf(os.Stdout, "%s: command not found\n", splt_input[0])
         }
 
@@ -44,6 +45,13 @@ func main() {
         if cmd == "echo" {
             fmt.Fprintf(os.Stdout, "%s\n", splt_input[1])
         }
+        if cmd == "type" {
+            chk := string(splt_input[1])
+            if is_valid_builtin(chk) {
+                fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", chk)
+            } else {
+                fmt.Fprintf(os.Stdout, "%s: not found\n", chk) }
+        }
     }
 
     if status != 0 {
@@ -51,6 +59,6 @@ func main() {
     }
 }
 
-func is_valid_cmd(cmd string) bool {
-    return slices.Contains(CMD_LIST, cmd)
+func is_valid_builtin(cmd string) bool {
+    return slices.Contains(BUILTIN_LIST, cmd)
 }
