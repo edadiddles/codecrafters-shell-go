@@ -11,6 +11,7 @@ import (
 
 var CMD_LIST = []string {
     "exit",
+    "echo",
 }
 
 
@@ -26,7 +27,7 @@ func main() {
         }
 
         input = strings.TrimSpace(input)
-        splt_input := strings.Split(input, " ")
+        splt_input := strings.SplitN(input, " ", 2)
 
         if len(splt_input) == 0 {
            return 
@@ -35,9 +36,13 @@ func main() {
             fmt.Fprintf(os.Stdout, "%s: command not found\n", splt_input[0])
         }
 
-        if string(splt_input[0]) == "exit" {
+        cmd := string(splt_input[0])
+        if cmd == "exit" {
             status, err = strconv.Atoi(splt_input[1])
             break
+        }
+        if cmd == "echo" {
+            fmt.Fprintf(os.Stdout, "%s\n", splt_input[1])
         }
     }
 
