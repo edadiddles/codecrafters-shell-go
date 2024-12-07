@@ -7,6 +7,7 @@ import (
     "strings"
     "slices"
     "strconv"
+    "os/exec"
 )
 
 var BUILTIN_LIST = []string {
@@ -30,33 +31,44 @@ func main() {
         input = strings.TrimSpace(input)
         splt_input := strings.SplitN(input, " ", 2)
 
+        cmd := string(splt_input[0])
+        is_builtin := is_valid_builtin(cmd)
+        cmd_path := chk_path(cmd)
         if len(splt_input) == 0 {
            return 
-        }
-        if !is_valid_builtin(splt_input[0]) {
-            fmt.Fprintf(os.Stdout, "%s: command not found\n", splt_input[0])
+        } else if is_builtin {
+            if cmd == "exit" {
+                status, err = strconv.Atoi(splt_input[1])
+                break
+            } else if cmd == "echo" {
+                fmt.Fprintf(os.Stdout, "%s\n", splt_input[1])
+            } else if cmd == "type" {
+                chk := string(splt_input[1])
+
+                is_builtin = is_valid_builtin(chk)
+                cmd_path = chk_path(chk)
+                if is_builtin {
+                    fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", chk)
+                } else if cmd_path != "" {
+                    fmt.Fprintf(os.Stdout, "%s is %s\n", chk, cmd_path)
+                } else {
+                    fmt.Fprintf(os.Stdout, "%s: not found\n", chk) 
+                }
+            }
+        } else if cmd_path != "" {
+            var args = []string{} 
+            if len(splt_input) > 1 {
+                args = strings.Split(string(splt_input[1]), " ")
+            }
+            out, err := exec.Command(cmd_path, args...).Output()
+            if err != nil {
+                panic(err)
+            }
+            fmt.Fprintf(os.Stdout, "%s\n", out)
+        } else {
+            fmt.Fprintf(os.Stdout, "%s: command not found\n", cmd)
         }
 
-        cmd := string(splt_input[0])
-        if cmd == "exit" {
-            status, err = strconv.Atoi(splt_input[1])
-            break
-        }
-        if cmd == "echo" {
-            fmt.Fprintf(os.Stdout, "%s\n", splt_input[1])
-        }
-        if cmd == "type" {
-            chk := string(splt_input[1])
-
-            is_builtin := is_valid_builtin(chk)
-            cmd_path := chk_path(chk)
-            if is_builtin {
-                fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", chk)
-            } else if cmd_path != "" {
-                fmt.Fprintf(os.Stdout, "%s is %s\n", chk, cmd_path)
-            } else {
-                fmt.Fprintf(os.Stdout, "%s: not found\n", chk) }
-        }
     }
 
     if status != 0 {
