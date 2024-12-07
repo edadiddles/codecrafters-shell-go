@@ -47,8 +47,13 @@ func main() {
         }
         if cmd == "type" {
             chk := string(splt_input[1])
-            if is_valid_builtin(chk) {
+
+            is_builtin := is_valid_builtin(chk)
+            cmd_path := chk_path(chk)
+            if is_builtin {
                 fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", chk)
+            } else if cmd_path != "" {
+                fmt.Fprintf(os.Stdout, "%s is %s\n", chk, cmd_path)
             } else {
                 fmt.Fprintf(os.Stdout, "%s: not found\n", chk) }
         }
@@ -62,3 +67,23 @@ func main() {
 func is_valid_builtin(cmd string) bool {
     return slices.Contains(BUILTIN_LIST, cmd)
 }
+
+func chk_path(cmd string) string {
+    paths := strings.Split(os.Getenv("PATH"), ":")
+
+    for _, path := range paths {
+        files, err := os.ReadDir(path)
+        if err != nil {
+            continue
+        }
+
+        for _, file := range files {
+            if cmd == file.Name() {
+                return path
+            }
+        }
+    }
+
+    return ""
+}
+
