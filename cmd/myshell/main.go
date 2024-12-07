@@ -79,7 +79,7 @@ func chk_path(cmd string) string {
 
         for _, file := range files {
             if cmd == file.Name() {
-                return path
+                return path + "/" + file.Name()
             }
         }
     }
