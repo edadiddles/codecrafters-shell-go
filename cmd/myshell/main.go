@@ -64,7 +64,7 @@ func main() {
             if err != nil {
                 panic(err)
             }
-            fmt.Fprintf(os.Stdout, "%s\n", out)
+            fmt.Fprintf(os.Stdout, "%s", out)
         } else {
             fmt.Fprintf(os.Stdout, "%s: command not found\n", cmd)
         }
