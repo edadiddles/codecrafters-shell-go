@@ -43,7 +43,25 @@ func main() {
                 status, err = strconv.Atoi(splt_input[1])
                 break
             } else if cmd == "echo" {
-                fmt.Fprintf(os.Stdout, "%s\n", splt_input[1])
+                var args = []string{} 
+                if len(splt_input) > 1 {
+                    args = strings.Split(string(splt_input[1]), "\"")
+                    if len(args) == 1 {
+                        args = strings.Split(args[0], "'")
+                    }
+                    if len(args) == 1 {
+                        args = strings.Split(args[0], " ")
+                    }
+
+                    for i:=len(args)-1; i>=0; i-- {
+                        if strings.TrimSpace(args[i]) == "" {
+                            args = slices.Delete(args, i, i+1)
+                        }
+                    }
+
+                }
+                out := strings.Join(args, " ")
+                fmt.Fprintf(os.Stdout, "%s\n", out)
             } else if cmd == "type" {
                 chk := string(splt_input[1])
 
@@ -76,7 +94,20 @@ func main() {
         } else if cmd_path != "" {
             var args = []string{} 
             if len(splt_input) > 1 {
-                args = strings.Split(string(splt_input[1]), " ")
+                args = strings.Split(string(splt_input[1]), "\"")
+                if len(args) == 1 {
+                    args = strings.Split(args[0], "'")
+                }
+                if len(args) == 1 {
+                    args = strings.Split(args[0], " ")
+                }
+
+                for i:=len(args)-1; i>=0; i-- {
+                    if strings.TrimSpace(args[i]) == "" {
+                        args = slices.Delete(args, i, i+1)
+                    }
+                }
+
             }
             out, err := exec.Command(cmd_path, args...).Output()
             if err != nil {
