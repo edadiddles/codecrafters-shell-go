@@ -64,6 +64,9 @@ func main() {
                 fmt.Fprintf(os.Stdout, "%s\n", dir)
             } else if cmd == "cd" {
                 chg_dir := string(splt_input[1])
+                if chg_dir == "~" {
+                    chg_dir = os.Getenv("HOME")
+                }
                 err := os.Chdir(chg_dir)
                 if err != nil {
                     fmt.Fprintf(os.Stdout, "%s: No such file or directory\n", chg_dir)
