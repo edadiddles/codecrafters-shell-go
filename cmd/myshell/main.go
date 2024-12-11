@@ -31,7 +31,8 @@ func main() {
         }
 
         input = strings.TrimSpace(input)
-        splt_input := strings.SplitN(input, " ", 2)
+        splt_input := parse_inputs(input)
+       // splt_input := strings.SplitN(input, " ", 2)
 
         cmd := string(splt_input[0])
         is_builtin := is_valid_builtin(cmd)
@@ -45,7 +46,7 @@ func main() {
             } else if cmd == "echo" {
                 var args = []string{} 
                 if len(splt_input) > 1 {
-                    args = parse_inputs(splt_input[1])
+                    args = splt_input[1:]
 
                     for i:=len(args)-1; i>=0; i-- {
                         if strings.TrimSpace(args[i]) == "" {
@@ -88,21 +89,7 @@ func main() {
         } else if cmd_path != "" {
             var args = []string{} 
             if len(splt_input) > 1 {
-                //args = strings.Split(string(splt_input[1]), "\"")
-                //if len(args) == 1 {
-                //    args = strings.Split(args[0], "'")
-                //}
-                //if len(args) == 1 {
-                //    args = strings.Split(args[0], " ")
-                //}
-
-                //for i:=len(args)-1; i>=0; i-- {
-                //    if strings.TrimSpace(args[i]) == "" {
-                //        args = slices.Delete(args, i, i+1)
-                //    }
-                //}
-
-                args = parse_inputs(splt_input[1])
+                args = splt_input[1:]
 
                 for i:=len(args)-1; i>=0; i-- {
                     if strings.TrimSpace(args[i]) == "" {
