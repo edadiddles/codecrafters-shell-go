@@ -88,23 +88,35 @@ func main() {
         } else if cmd_path != "" {
             var args = []string{} 
             if len(splt_input) > 1 {
-                args = strings.Split(string(splt_input[1]), "\"")
-                if len(args) == 1 {
-                    args = strings.Split(args[0], "'")
-                }
-                if len(args) == 1 {
-                    args = strings.Split(args[0], " ")
-                }
+                //args = strings.Split(string(splt_input[1]), "\"")
+                //if len(args) == 1 {
+                //    args = strings.Split(args[0], "'")
+                //}
+                //if len(args) == 1 {
+                //    args = strings.Split(args[0], " ")
+                //}
+
+                //for i:=len(args)-1; i>=0; i-- {
+                //    if strings.TrimSpace(args[i]) == "" {
+                //        args = slices.Delete(args, i, i+1)
+                //    }
+                //}
+
+                args = parse_inputs(splt_input[1])
 
                 for i:=len(args)-1; i>=0; i-- {
                     if strings.TrimSpace(args[i]) == "" {
                         args = slices.Delete(args, i, i+1)
                     }
                 }
-
             }
             out, err := exec.Command(cmd_path, args...).Output()
             if err != nil {
+                fmt.Print(len(args))
+                fmt.Print(" ")
+                fmt.Print(cmd_path)
+                fmt.Print(" ")
+                fmt.Print(args)
                 panic(err)
             }
             fmt.Fprintf(os.Stdout, "%s", out)
@@ -147,6 +159,7 @@ func parse_inputs(input string) []string {
     bs_enc := byte(92) // encoding for \
     sq_enc := byte(39) // encoding for '
     dq_enc := byte(34) // encoding for "
+    ds_enc := byte(36) // encoding for $
 
     var output_args = []string{}
     var curr_arg = []byte{}
@@ -158,29 +171,34 @@ func parse_inputs(input string) []string {
             if !is_double_quoted && !is_single_quoted {
                 is_escaped = true
                 continue
+            } else if is_double_quoted && len(input) > i+1{
+                pk := input[i+1]
+                if pk == bs_enc || pk == dq_enc || pk == ds_enc {
+                    is_escaped = true
+                    continue
+                }
             }
         } else if input[i] == sq_enc {
             if !is_double_quoted {
-                is_single_quoted = !is_single_quoted
                 if !is_escaped {
+                    is_single_quoted = !is_single_quoted
                     continue
                 }
             }
 
         } else if input[i] == dq_enc {
             if !is_single_quoted {
-                is_double_quoted = !is_double_quoted
                 if !is_escaped {
+                    is_double_quoted = !is_double_quoted
                     continue
                 }
             }
-            
         } else if !is_escaped && !is_double_quoted && !is_single_quoted && input[i] == sp_enc {
             output_args = slices.Insert(output_args, len(output_args), string(curr_arg))
             curr_arg = []byte{}
             continue
         }
-
+        
         curr_arg = slices.Insert(curr_arg, len(curr_arg), input[i])
 
         if is_escaped {
