@@ -45,13 +45,7 @@ func main() {
             } else if cmd == "echo" {
                 var args = []string{} 
                 if len(splt_input) > 1 {
-                    args = strings.Split(string(splt_input[1]), "\"")
-                    if len(args) == 1 {
-                        args = strings.Split(args[0], "'")
-                    }
-                    if len(args) == 1 {
-                        args = strings.Split(args[0], " ")
-                    }
+                    args = parse_inputs(splt_input[1])
 
                     for i:=len(args)-1; i>=0; i-- {
                         if strings.TrimSpace(args[i]) == "" {
@@ -148,3 +142,51 @@ func chk_path(cmd string) string {
     return ""
 }
 
+func parse_inputs(input string) []string {
+    sp_enc := byte(32) // encoding for {white space}
+    bs_enc := byte(92) // encoding for \
+    sq_enc := byte(39) // encoding for '
+    dq_enc := byte(34) // encoding for "
+
+    var output_args = []string{}
+    var curr_arg = []byte{}
+    is_escaped := false
+    is_single_quoted := false
+    is_double_quoted := false
+    for i:=0; i < len(input); i++ {
+        if !is_escaped && input[i] == bs_enc {
+            if !is_double_quoted && !is_single_quoted {
+                is_escaped = true
+                continue
+            }
+        } else if input[i] == sq_enc {
+            if !is_double_quoted {
+                is_single_quoted = !is_single_quoted
+                if !is_escaped {
+                    continue
+                }
+            }
+
+        } else if input[i] == dq_enc {
+            if !is_single_quoted {
+                is_double_quoted = !is_double_quoted
+                if !is_escaped {
+                    continue
+                }
+            }
+            
+        } else if !is_escaped && !is_double_quoted && !is_single_quoted && input[i] == sp_enc {
+            output_args = slices.Insert(output_args, len(output_args), string(curr_arg))
+            curr_arg = []byte{}
+            continue
+        }
+
+        curr_arg = slices.Insert(curr_arg, len(curr_arg), input[i])
+
+        if is_escaped {
+            is_escaped = false
+        }
+    }
+    output_args = slices.Insert(output_args, len(output_args), string(curr_arg))
+    return output_args
+}
