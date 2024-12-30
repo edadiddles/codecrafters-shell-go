@@ -8,6 +8,7 @@ import (
     "slices"
     "strconv"
     "os/exec"
+    "github.com/codecrafters-io/shell-starter-go/cmd/myshell/parsing"
 )
 
 var BUILTIN_LIST = []string {
@@ -31,8 +32,12 @@ func main() {
         }
 
         input = strings.TrimSpace(input)
-        splt_input := parse_inputs(input)
-       // splt_input := strings.SplitN(input, " ", 2)
+        splt_input_word := parsing.Parse(input)
+
+        splt_input := []string{}
+        for i:=0; i < len(splt_input_word); i++ {
+            splt_input = append(splt_input, splt_input_word[i].Val)
+        }
 
         cmd := string(splt_input[0])
         is_builtin := is_valid_builtin(cmd)
@@ -139,59 +144,4 @@ func chk_path(cmd string) string {
     }
 
     return ""
-}
-
-func parse_inputs(input string) []string {
-    sp_enc := byte(32) // encoding for {white space}
-    bs_enc := byte(92) // encoding for \
-    sq_enc := byte(39) // encoding for '
-    dq_enc := byte(34) // encoding for "
-    ds_enc := byte(36) // encoding for $
-
-    var output_args = []string{}
-    var curr_arg = []byte{}
-    is_escaped := false
-    is_single_quoted := false
-    is_double_quoted := false
-    for i:=0; i < len(input); i++ {
-        if !is_escaped && input[i] == bs_enc {
-            if !is_double_quoted && !is_single_quoted {
-                is_escaped = true
-                continue
-            } else if is_double_quoted && len(input) > i+1{
-                pk := input[i+1]
-                if pk == bs_enc || pk == dq_enc || pk == ds_enc {
-                    is_escaped = true
-                    continue
-                }
-            }
-        } else if input[i] == sq_enc {
-            if !is_double_quoted {
-                if !is_escaped {
-                    is_single_quoted = !is_single_quoted
-                    continue
-                }
-            }
-
-        } else if input[i] == dq_enc {
-            if !is_single_quoted {
-                if !is_escaped {
-                    is_double_quoted = !is_double_quoted
-                    continue
-                }
-            }
-        } else if !is_escaped && !is_double_quoted && !is_single_quoted && input[i] == sp_enc {
-            output_args = slices.Insert(output_args, len(output_args), string(curr_arg))
-            curr_arg = []byte{}
-            continue
-        }
-        
-        curr_arg = slices.Insert(curr_arg, len(curr_arg), input[i])
-
-        if is_escaped {
-            is_escaped = false
-        }
-    }
-    output_args = slices.Insert(output_args, len(output_args), string(curr_arg))
-    return output_args
 }
