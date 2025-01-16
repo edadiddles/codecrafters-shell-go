@@ -19,6 +19,11 @@ var BUILTIN_LIST = []string {
     "cd",
 }
 
+type Redirect struct {
+    Stdout string
+    Stderr string
+    ShallAppend bool
+}
 
 func main() {
     status := 0
@@ -41,6 +46,8 @@ func main() {
 
         cmd := string(splt_input[0])
         is_builtin := is_valid_builtin(cmd)
+        redirect := Redirect{ Stdout: "", Stderr: "", ShallAppend: false }
+        redirect.setup_redirect(splt_input)
         cmd_path := chk_path(cmd)
         if len(splt_input) == 0 {
            return 
@@ -52,34 +59,37 @@ func main() {
                 var args = []string{} 
                 if len(splt_input) > 1 {
                     args = splt_input[1:]
-
                     for i:=len(args)-1; i>=0; i-- {
                         if strings.TrimSpace(args[i]) == "" {
                             args = slices.Delete(args, i, i+1)
                         }
                     }
-
                 }
-                out := strings.Join(args, " ")
-                fmt.Fprintf(os.Stdout, "%s\n", out)
+                output := strings.Join(args, " ")
+                out := fmt.Sprintf("%s\n", output)
+                redirect.write_stdout(out)
             } else if cmd == "type" {
                 chk := string(splt_input[1])
 
                 is_builtin = is_valid_builtin(chk)
                 cmd_path = chk_path(chk)
                 if is_builtin {
-                    fmt.Fprintf(os.Stdout, "%s is a shell builtin\n", chk)
+                    out := fmt.Sprintf("%s is a shell builtin\n", chk)
+                    redirect.write_stdout(out)
                 } else if cmd_path != "" {
-                    fmt.Fprintf(os.Stdout, "%s is %s\n", chk, cmd_path)
+                    out := fmt.Sprintf("%s is %s\n", chk, cmd_path)
+                    redirect.write_stdout(out)
                 } else {
-                    fmt.Fprintf(os.Stdout, "%s: not found\n", chk) 
+                    out := fmt.Sprintf("%s: not found\n", chk) 
+                    redirect.write_stdout(out)
                 }
             } else if cmd == "pwd" {
                 dir, err := os.Getwd()
                 if err != nil {
                     panic(err)
                 }
-                fmt.Fprintf(os.Stdout, "%s\n", dir)
+                out := fmt.Sprintf("%s\n", dir)
+                redirect.write_stdout(out)
             } else if cmd == "cd" {
                 chg_dir := string(splt_input[1])
                 if chg_dir == "~" {
@@ -87,7 +97,8 @@ func main() {
                 }
                 err := os.Chdir(chg_dir)
                 if err != nil {
-                    fmt.Fprintf(os.Stdout, "%s: No such file or directory\n", chg_dir)
+                    out := fmt.Sprintf("%s: No such file or directory\n", chg_dir)
+                    redirect.write_stdout(out)
                 }
 
             }
@@ -102,18 +113,32 @@ func main() {
                     }
                 }
             }
-            out, err := exec.Command(cmd_path, args...).Output()
-            if err != nil {
-                fmt.Print(len(args))
-                fmt.Print(" ")
-                fmt.Print(cmd_path)
-                fmt.Print(" ")
-                fmt.Print(args)
-                panic(err)
+            if len(args) == 0 {
+                cmd_parts := strings.Split(cmd_path, "/")
+                cmd := cmd_parts[len(cmd_parts)-1]
+                output, err := exec.Command(cmd).Output()
+                if err != nil {
+                    out := fmt.Sprintf("%s: %s\n", cmd, "Error")
+                    redirect.write_stderr(out)
+                } else {
+                    out := fmt.Sprintf("%s", output)
+                    redirect.write_stdout(out)
+                }
             }
-            fmt.Fprintf(os.Stdout, "%s", out)
+            for _, arg := range args {
+                output, err := exec.Command(cmd, arg).Output()
+                if err != nil {
+                    cmd := strings.Split(cmd_path, "/")
+                    out := fmt.Sprintf("%s: %s: %s\n", cmd, arg, "No such file or directory")
+                    redirect.write_stderr(out)
+                } else {
+                    out := fmt.Sprintf("%s", output)
+                    redirect.write_stdout(out)
+                }
+            }
         } else {
-            fmt.Fprintf(os.Stdout, "%s: command not found\n", cmd)
+            out := fmt.Sprintf("%s: command not found\n", cmd)
+            redirect.write_stdout(out)
         }
 
     }
@@ -144,4 +169,99 @@ func chk_path(cmd string) string {
     }
 
     return ""
+}
+
+func (r *Redirect) setup_redirect(inpts []string) {
+    r.Stdout = "stdout"
+    r.Stderr = "stderr"
+    r.ShallAppend = false
+    for i:=len(inpts)-1; i > 0; i-- {
+        if inpts[i] == ">" || inpts[i] == "1>" {
+            r.Stdout = inpts[i+1]
+            inpts = slices.Delete(inpts, i, i+2)
+        } else if inpts[i] == "2>" {
+            r.Stderr = inpts[i+1]
+            inpts = slices.Delete(inpts, i, i+2)
+        } else if inpts[i] == ">>" || inpts[i] == "1>>" {
+            r.ShallAppend = true
+            r.Stdout = inpts[i+1]
+            inpts = slices.Delete(inpts, i, i+2)
+        } else if inpts[i] == "2>>" {
+            r.ShallAppend = true
+            r.Stderr = inpts[i+1]
+            inpts = slices.Delete(inpts, i, i+2)
+        }
+    }
+}
+
+func (r *Redirect) write_stdout(str string) {
+    if r.Stdout == "stdout" {
+        fmt.Fprint(os.Stdout, str)
+    } else { 
+        if r.ShallAppend {
+            f, err := os.OpenFile(r.Stdout, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+            if err != nil {
+                panic(err)
+            }
+            _, err = f.Write([]byte(str))
+            if err != nil {
+                f.Close()
+                panic(err)
+            }
+            err = f.Close()
+            if err != nil {
+                panic(err)
+            }
+        } else {
+            f, err := os.OpenFile(r.Stdout, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
+            if err != nil {
+                panic(err)
+            }
+            _, err = f.Write([]byte(str))
+            if err != nil {
+                f.Close()
+                panic(err)
+            }
+            err = f.Close()
+            if err != nil {
+                panic(err)
+            }
+        }
+    }
+}
+
+func (r *Redirect) write_stderr(str string) {
+    if r.Stderr == "stderr" {
+        fmt.Fprint(os.Stderr, str)
+    } else { 
+        if r.ShallAppend {
+            f, err := os.OpenFile(r.Stderr, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0777)
+            if err != nil {
+                panic(err)
+            }
+            _, err = f.Write([]byte(str))
+            if err != nil {
+                f.Close()
+                panic(err)
+            }
+            err = f.Close()
+            if err != nil {
+                panic(err)
+            }
+        } else {
+            f, err := os.OpenFile(r.Stderr, os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0777)
+            if err != nil {
+                panic(err)
+            }
+            _, err = f.Write([]byte(str))
+            if err != nil {
+                f.Close()
+                panic(err)
+            }
+            err = f.Close()
+            if err != nil {
+                panic(err)
+            }
+        }
+    }
 }

@@ -7,6 +7,7 @@ import (
 type Word struct {
     Val string
     IsQuoted bool
+    IsOperator bool
 }
 
 const (
@@ -33,13 +34,15 @@ func Parse(input string) []Word {
     for i := 0; i < len(input); i++ {
         if input[i] == ENCODING_SPACE && !is_quoted {
             if len(curr_word) > 0 {
-                words = append(words, Word{Val: string(curr_word), IsQuoted: false})
+                words = append(words, Word{Val: string(curr_word), IsQuoted: is_quoted, IsOperator: false})
                 curr_word = []byte{}
+                is_quoted = false
+                quote_type = ""
             }
         } else if input[i] == ENCODING_SINGLE_QUOTE && (!is_quoted || quote_type == QUOTE_TYPE_SINGLE) {
             if is_quoted {
-                words = append(words, Word{Val: string(curr_word), IsQuoted: is_quoted})
-                curr_word = []byte{}
+                //words = append(words, Word{Val: string(curr_word), IsQuoted: is_quoted, IsOperator: false})
+                //curr_word = []byte{}
                 is_quoted = false
                 quote_type = ""
             } else {
@@ -48,7 +51,7 @@ func Parse(input string) []Word {
             }
         } else if input[i] == ENCODING_DOUBLE_QUOTE && (!is_quoted || quote_type == QUOTE_TYPE_DOUBLE) {
             if is_quoted {
-                //words = append(words, Word{Val: string(curr_word), IsQuoted: is_quoted})
+                //words = append(words, Word{Val: string(curr_word), IsQuoted: is_quoted, IsOperator: false})
                 //curr_word = []byte{}
                 is_quoted = false
                 quote_type = ""
@@ -68,7 +71,51 @@ func Parse(input string) []Word {
                 } else {
                     curr_word = append(curr_word, input[i])
                 }
-            }   
+            }
+        } else if input[i] == '1' || input[i] == '2' {
+            
+            letter := peek(input, i)
+            if letter == ENCODING_GREATER_THAN {
+                // save current word
+                if len(curr_word) > 0 {
+                    words = append(words, Word{Val: string(curr_word), IsQuoted: is_quoted, IsOperator: true})
+                    curr_word = []byte{}
+                    is_quoted = false
+                    quote_type = "" 
+                }
+                // start tracking new word
+                curr_word = append(curr_word, input[i])
+                i++
+                curr_word = append(curr_word, input[i])
+                letter := peek(input, i)
+                if letter == ENCODING_GREATER_THAN {
+                    curr_word = append(curr_word, letter)
+                    i++
+                }
+            } else {
+                curr_word = append(curr_word, input[i])
+            }
+        } else if input[i] == ENCODING_GREATER_THAN {
+            // save current word
+            if len(curr_word) > 0 {
+                words = append(words, Word{Val: string(curr_word), IsQuoted: is_quoted, IsOperator: true})
+                curr_word = []byte{}
+                is_quoted = false
+                quote_type = ""
+            }
+
+            // start tracking new word
+            curr_word = append(curr_word, input[i])
+            letter := peek(input, i)
+            if letter == ENCODING_GREATER_THAN {
+                curr_word = append(curr_word, input[i+1])
+                i++
+            }
+            
+            words = append(words, Word{Val: string(curr_word), IsQuoted: is_quoted, IsOperator: true})
+            curr_word = []byte{}
+            is_quoted = false
+            quote_type = ""
         } else {
             curr_word = append(curr_word, input[i])
         }
@@ -76,7 +123,7 @@ func Parse(input string) []Word {
 
     // save final word if not empty
     if len(curr_word) > 0 {
-        words = append(words, Word{Val: string(curr_word), IsQuoted: false})
+        words = append(words, Word{Val: string(curr_word), IsQuoted: false, IsOperator: false})
     }
     
     return words
