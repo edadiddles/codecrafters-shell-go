@@ -113,9 +113,9 @@ func main() {
                     }
                 }
             }
+            cmd_parts := strings.Split(cmd_path, "/")
+            cmd := cmd_parts[len(cmd_parts)-1]
             if len(args) == 0 {
-                cmd_parts := strings.Split(cmd_path, "/")
-                cmd := cmd_parts[len(cmd_parts)-1]
                 output, err := exec.Command(cmd).Output()
                 if err != nil {
                     out := fmt.Sprintf("%s: %s\n", cmd, "Error")
@@ -128,7 +128,6 @@ func main() {
             for _, arg := range args {
                 output, err := exec.Command(cmd, arg).Output()
                 if err != nil {
-                    cmd := strings.Split(cmd_path, "/")
                     out := fmt.Sprintf("%s: %s: %s\n", cmd, arg, "No such file or directory")
                     redirect.write_stderr(out)
                 } else {
