@@ -125,8 +125,10 @@ func main() {
                     redirect.write_stdout(out)
                 }
             }
-            for _, arg := range args {
-                output, err := exec.Command(cmd, arg).Output()
+            g_args, i_args := separate_args(args)
+            for _, arg := range i_args {
+                c_args := append(g_args, arg)
+                output, err := exec.Command(cmd, c_args...).Output()
                 if err != nil {
                     out := fmt.Sprintf("%s: %s: %s\n", cmd, arg, "No such file or directory")
                     redirect.write_stderr(out)
@@ -145,6 +147,22 @@ func main() {
     if status != 0 {
         panic("program ended with non-zero status")
     }
+}
+
+func separate_args(args []string) ([]string, []string) {
+    global_args := make([]string, 0)
+    input_args := make([]string, 0)
+    for _, arg := range args {
+        if len(arg) == 0 {
+            continue
+        } else if arg[0] == '-' {
+            global_args = append(global_args, arg)
+        } else {
+            input_args = append(input_args, arg)
+        }
+    }
+
+    return global_args, input_args
 }
 
 func is_valid_builtin(cmd string) bool {
@@ -178,17 +196,21 @@ func (r *Redirect) setup_redirect(inpts []string) {
         if inpts[i] == ">" || inpts[i] == "1>" {
             r.Stdout = inpts[i+1]
             inpts = slices.Delete(inpts, i, i+2)
+            r.write_stdout("")
         } else if inpts[i] == "2>" {
             r.Stderr = inpts[i+1]
             inpts = slices.Delete(inpts, i, i+2)
+            r.write_stderr("")
         } else if inpts[i] == ">>" || inpts[i] == "1>>" {
             r.ShallAppend = true
             r.Stdout = inpts[i+1]
             inpts = slices.Delete(inpts, i, i+2)
+            r.write_stdout("")
         } else if inpts[i] == "2>>" {
             r.ShallAppend = true
             r.Stderr = inpts[i+1]
             inpts = slices.Delete(inpts, i, i+2)
+            r.write_stderr("")
         }
     }
 }
@@ -264,3 +286,5 @@ func (r *Redirect) write_stderr(str string) {
         }
     }
 }
+
+
