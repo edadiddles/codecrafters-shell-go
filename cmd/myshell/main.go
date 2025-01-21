@@ -91,8 +91,7 @@ func main() {
                             cmd_list_str += fmt.Sprintf("%s  ", autocomplete)
                         }
                         fmt.Printf("%s\n", strings.TrimSpace(cmd_list_str))
-                        input_buffer = []byte{}
-                        fmt.Print("$ ")
+                        fmt.Printf("$ %s", input_buffer)
                     }
                 }
             } else if buffer[0] == '\n' {
@@ -297,7 +296,7 @@ func chk_cmd_autocomplete(p_cmd string) []string {
             }
         }
     }
-
+    slices.Sort(autocompletes)
     return autocompletes
 }
 
