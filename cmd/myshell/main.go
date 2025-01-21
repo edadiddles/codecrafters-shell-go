@@ -81,8 +81,15 @@ func main() {
                     fmt.Printf("$ %s", input_buffer) 
                 } else if len(autocomplete_list) > 1 {
                     if !tab_pressed {
-                        tab_pressed = true
-                        fmt.Print("\a")
+                        p_cmd := find_common_name(autocomplete_list)
+                        if p_cmd != string(input_buffer) { 
+                            input_buffer = []byte(p_cmd)
+                            fmt.Print("\r\x1b[K")
+                            fmt.Printf("$ %s", input_buffer) 
+                        } else {
+                            tab_pressed = true
+                            fmt.Print("\a")
+                        }
                     } else if tab_pressed {
                         tab_pressed = false
                         fmt.Print("\n")
@@ -457,3 +464,30 @@ func execute(splt_input []string) int {
 
     return status
 }
+
+func find_common_name(cmd_list []string) string {
+    common_cmd := ""
+
+    is_common := true
+    for i := 0; is_common; i++ {
+        var curr_letter byte
+        for j:=0; j < len(cmd_list); j++ {
+            if i >= len(cmd_list[j]) {
+                is_common = false
+                break
+            } else if j == 0 {
+                curr_letter = cmd_list[j][i]
+            } else if curr_letter != cmd_list[j][i] {
+                is_common = false
+                break
+            }
+        }
+
+        if is_common {
+            common_cmd += string(curr_letter)
+        }
+    }
+
+    return common_cmd
+}
+            
