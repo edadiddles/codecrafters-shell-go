@@ -57,6 +57,7 @@ func main() {
         buffer := make([]byte, 1)
         input_buffer := make([]byte, 0)
         splt_input := []string{}
+        tab_pressed := false
         for {
             _, err := os.Stdin.Read(buffer)
             if err != nil {
@@ -65,33 +66,48 @@ func main() {
             }
 
             if buffer[0] == '\t' {
+                if len(input_buffer) == 0 {
+                    continue
+                }
                 splt_input = split_input(string(input_buffer))
                 autocomplete_list := chk_cmd_autocomplete(splt_input[0])
-                if len(autocomplete_list) == 1 {
+                if len(autocomplete_list) == 0 {
+                    tab_pressed = false
+                    fmt.Print("\a")
+                } else if len(autocomplete_list) == 1 {
+                    tab_pressed = false
                     input_buffer = []byte(autocomplete_list[0] + " ")
                     fmt.Print("\r\x1b[K")
                     fmt.Printf("$ %s", input_buffer) 
                 } else if len(autocomplete_list) > 1 {
-                    fmt.Print("\n")
-                    cmd_list_str:= ""
-                    for _, autocomplete := range autocomplete_list {
-                        cmd_list_str += fmt.Sprintf("%s  ", autocomplete)
+                    if !tab_pressed {
+                        tab_pressed = true
+                        fmt.Print("\a")
+                    } else if tab_pressed {
+                        tab_pressed = false
+                        fmt.Print("\n")
+                        cmd_list_str:= ""
+                        for _, autocomplete := range autocomplete_list {
+                            cmd_list_str += fmt.Sprintf("%s  ", autocomplete)
+                        }
+                        fmt.Printf("%s\n", strings.TrimSpace(cmd_list_str))
+                        input_buffer = []byte{}
+                        fmt.Print("$ ")
                     }
-                    fmt.Printf("%s\n", strings.TrimSpace(cmd_list_str))
-                    input_buffer = []byte{}
-                    break
                 }
             } else if buffer[0] == '\n' {
                 fmt.Print("\n")
                 splt_input = split_input(string(input_buffer))
                 break
             } else if buffer[0] == '\x7f' {
+                tab_pressed = false
                 if len(input_buffer) > 0 {
                     fmt.Print("\r\x1b[K")
                     input_buffer = input_buffer[0:len(input_buffer)-1]
                     fmt.Printf("$ %s", input_buffer) 
                 }
             } else {
+                tab_pressed = false
                 input_buffer = append(input_buffer, buffer[0])
                 fmt.Printf("%s", string(buffer[0]))
             }
